@@ -11,9 +11,9 @@ from .networks.vgg_osvos import OSVOS
 from .layers.osvos_layers import class_balanced_cross_entropy_loss
 
 
-def trainer(user_id, timestamp, epoches=100, batch=500):
-    db_root_dir = os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp)
-    save_dir = os.path.join('./models', user_id, timestamp)
+def trainer(user_id, epoches=20, batch=500):
+    db_root_dir = os.path.join(os.getenv("TEMP_DATA_PATH"), user_id)
+    save_dir = os.path.join('./models', user_id)
 
     if not os.path.exists(save_dir):
         os.makedirs(os.path.join(save_dir))
@@ -69,6 +69,6 @@ def trainer(user_id, timestamp, epoches=100, batch=500):
             print(current_loss)
 
         if current_loss < previous_loss:
-            torch.save(net.state_dict(), os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, "model.pth"))
+            torch.save(net.state_dict(), os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, "model.pth"))
             previous_loss = current_loss
 

@@ -10,9 +10,9 @@ from .networks.vgg_osvos import OSVOS
 from .dataloaders.helpers import *
 
 
-def predictor(user_id, timestamp):
-    db_root_dir = os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, "predict")
-    save_dir = os.path.join('./models', user_id, timestamp)
+def predictor(user_id):
+    db_root_dir = os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, "predict")
+    save_dir = os.path.join('./models', user_id)
 
     if not os.path.exists(save_dir):
         os.makedirs(os.path.join(save_dir))
@@ -20,7 +20,7 @@ def predictor(user_id, timestamp):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     net = OSVOS(pretrained=0)
-    net.load_state_dict(torch.load(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, "model.pth"), map_location=lambda storage, loc: storage))
+    net.load_state_dict(torch.load(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, "model.pth"), map_location=lambda storage, loc: storage))
     net.to(device)
     net.eval()
 
@@ -46,6 +46,7 @@ def predictor(user_id, timestamp):
                 pred = np.float32((pred > 0.99)) * 255
                 cv2.imwrite(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, "tmp.png"), pred)
 
+                print(pred.shape)
                 pred = pred.tolist()
 
                 pixels = []
@@ -53,15 +54,16 @@ def predictor(user_id, timestamp):
                     for x in range(len(pred[y])):
                         if pred[y][x] != 0:
                             pixels.append((x, y))
-
                 return pixels
                 # cv2.imwrite(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, "tmp.png"), pred)
                 #
                 # return os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, "tmp.png")
 
-def video_predictor(user_id, timestamp):
-    db_root_dir = os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, "video")
-    save_dir = os.path.join('./models', user_id, timestamp)
+def video_predictor(user_id):
+    #예측된 결과 저장하는거. 하면 된다.
+
+    db_root_dir = os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, "video")
+    save_dir = os.path.join('./models', user_id)
 
     if not os.path.exists(save_dir):
         os.makedirs(os.path.join(save_dir))
@@ -69,7 +71,7 @@ def video_predictor(user_id, timestamp):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     net = OSVOS(pretrained=0)
-    net.load_state_dict(torch.load(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, "model.pth"), map_location=lambda storage, loc: storage))
+    net.load_state_dict(torch.load(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, "model.pth"), map_location=lambda storage, loc: storage))
     net.to(device)
     net.eval()
 
@@ -79,9 +81,6 @@ def video_predictor(user_id, timestamp):
     save_dir_res = os.path.join(save_dir, 'Results')
     if not os.path.exists(save_dir_res):
         os.makedirs(save_dir_res)
-
-    video_path = os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, "video")
-    os.makedirs(os.path.join(video_path, "Predict"), exist_ok=True)
 
     predict_img_list = []
     with torch.no_grad():
@@ -99,10 +98,7 @@ def video_predictor(user_id, timestamp):
 
                 pred = np.float32((pred > 0.99)) * 255
 
-                # 비디오 이미지 예측 부분
-                # cv2.imwrite(os.path.join(video_path, "JPEGImages", f"video-frame-{idx}.png"), frame)
-                cv2.imwrite(os.path.join(video_path, "Predict", f"predict-frame-{ii + 1}.png"), pred)
-                # 원본 ) cv2.imwrite(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, f"result-{ii + 1}.png", pred)
+                # cv2.imwrite(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, f"tmp-{ii + 1}.png"), pred)
 
                 H, W = pred.shape
 
@@ -119,13 +115,10 @@ def video_predictor(user_id, timestamp):
                 predict_img_list.append(new_image)
 
         fcc = cv2.VideoWriter_fourcc(*'DIVX')
-        out = cv2.VideoWriter(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, "output.avi"), fcc, 20, (W, H))
+        out = cv2.VideoWriter(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, "output.avi"), fcc, 20, (W, H))
 
         for result in predict_img_list:
             out.write(np.asarray(result, dtype=np.uint8))
 
         out.release()
 
-
-def new_video_predictor(user_id):
-    pass
