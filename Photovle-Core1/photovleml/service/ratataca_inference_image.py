@@ -16,7 +16,7 @@ from mypath import Path
 
 def predictor(user_id):
     db_root_dir = Path.db_root_dir()
-    save_dir = os.path.join('./models', user_id, timestamp)
+    save_dir = os.path.join('./models', user_id)
 
     if not os.path.exists(save_dir):
         os.makedirs(os.path.join(save_dir))
