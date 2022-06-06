@@ -46,6 +46,7 @@ def predictor(user_id, timestamp):
                 pred = np.float32((pred > 0.99)) * 255
                 cv2.imwrite(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, "tmp.png"), pred)
 
+                print(pred.shape)
                 pred = pred.tolist()
 
                 pixels = []
@@ -53,7 +54,7 @@ def predictor(user_id, timestamp):
                     for x in range(len(pred[y])):
                         if pred[y][x] != 0:
                             pixels.append((x, y))
-
+                
                 return pixels
                 # cv2.imwrite(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, "tmp.png"), pred)
                 #
@@ -103,6 +104,7 @@ def video_predictor(user_id, timestamp):
                 # cv2.imwrite(os.path.join(video_path, "JPEGImages", f"video-frame-{idx}.png"), frame)
                 cv2.imwrite(os.path.join(video_path, "Predict", f"predict-frame-{ii + 1}.png"), pred)
                 # 원본 ) cv2.imwrite(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, f"result-{ii + 1}.png", pred)
+
 
                 H, W = pred.shape
 
