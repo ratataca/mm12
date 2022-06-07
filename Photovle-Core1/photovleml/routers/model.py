@@ -9,8 +9,15 @@ import cv2
 from flask import Blueprint, jsonify, request, send_file
 from photovleml.service import PhotovleService
 
+
+
 model_bp = Blueprint('model', __name__, url_prefix='/model')
 
+def make_timestame(timestamp):
+    timestamp = timestamp.replace("-", "_")
+    timestamp = timestamp.replace(":", "_")
+    timestamp = timestamp.replace(" ", "_")
+    return timestamp
 
 @model_bp.route("/train", methods=["POST"])
 def train():
@@ -19,6 +26,7 @@ def train():
         label = request.files["label"]
         user_id = request.form["user_id"]
         timestamp = request.form["timestamp"]
+        timestamp = make_timestame(timestamp)
         
         if img.filename == "":
             return jsonify(False)
@@ -54,6 +62,7 @@ def predict():
         label = request.files["label"]
         user_id = request.form["user_id"]
         timestamp = request.form["timestamp"]
+        timestamp = make_timestame(timestamp)
 
         if img.filename == "":
             return jsonify(False)
@@ -85,6 +94,7 @@ def get_predicted_video():
     if request.method == "POST":
         user_id = str(request.json["user_id"])
         timestamp = request.form["timestamp"]
+        timestamp = make_timestame(timestamp)
         PhotovleService.predict_video(user_id=user_id, timestamp=timestamp)
 
         return send_file(
@@ -106,34 +116,40 @@ def get_video():
         # time.sleep(25)
         print("동영상 저장 중 .....")
         user_id = str(request.json["user_id"])
-        timestamp = request.form["timestamp"]
-        access_folder = os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp,"split_img")
-        predict_folder = os.path.join('fake_labe_folder')
+        timestamp = request.json["timestamp"]
+        timestamp = make_timestame(timestamp)
+        
+        os.makedirs(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, "pred_img"),exist_ok=True)
+
+        access_folder = os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, 'video', "JPEGImages")
+        predict_folder = os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, "pred_img")
 
         total_count = len(glob.glob(access_folder+"/*.png"))
-        os.makedirs(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id,timestamp,"pred_img"),exist_ok=True)
 
         predict_img_list = []
         for idx in range(1, total_count+1):
 
             filename = f"video-frame-{idx}.png"
-            mask_img = cv2.imread(os.path.join(predict_folder,"fake_image.png"),0)
+            filename_pred = f"predict-frame-{idx}.png"
+            result_filename = f"result-frame-{idx}.png"
+            
+            mask_img = cv2.imread(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, 'video', "Predict", filename_pred),1)
             origin_img = cv2.imread(os.path.join(access_folder,filename))
 
             if idx == 1:
                 W, H, C = origin_img.shape
                 fcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
-                out = cv2.VideoWriter(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, "output.avi"), fcc, 20, (H, W))
+                out = cv2.VideoWriter(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, "output.avi"), fcc, 20, (H, W))
 
             # 임지 mask image
-            mask_img = np.zeros((origin_img.shape[0], origin_img.shape[1], 3), np.uint8)
-            cv2.circle(
-                mask_img,
-                (int(mask_img.shape[1] /4),
-                 int(mask_img.shape[1] /4)),
-                 int(mask_img.shape[1]/8),
-                (255,255,255),
-                -1)
+            # mask_img = np.zeros((origin_img.shape[0], origin_img.shape[1], 3), np.uint8)
+            # cv2.circle(
+            #     mask_img,
+            #     (int(mask_img.shape[1] /4),
+            #      int(mask_img.shape[1] /4)),
+            #      int(mask_img.shape[1]/8),
+            #     (255,255,255),
+            #     -1)
 
             # 타켓 대상 추출
             bit_and_mask = cv2.bitwise_and(origin_img, mask_img)
@@ -144,13 +160,13 @@ def get_video():
             bit_and_other = cv2.bitwise_and(origin_img, other_mask_img)
             dst_01 = mosaic(bit_and_other, ratio=0.08)
             result_img = cv2.add(dst_01, bit_and_mask)
-            cv2.imwrite(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id,timestamp,"pred_img",filename), result_img)
+            cv2.imwrite(os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp,"pred_img",result_filename), result_img)
 
             out.write(result_img)
 
         out.release()
         print("동영상 저장 완료")
         return send_file(
-            os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, "output.avi"),
+            os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, "output.avi"),
             mimetype="video/x-msvideo"
         )

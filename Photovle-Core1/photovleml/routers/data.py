@@ -13,6 +13,12 @@ import base64
 
 data_bp = Blueprint('data', __name__, url_prefix='/data')
 
+def make_timestame(timestamp):
+    timestamp = timestamp.replace("-", "_")
+    timestamp = timestamp.replace(":", "_")
+    timestamp = timestamp.replace(" ", "_")
+    return timestamp
+
 def get_response_image(image_path):
     pil_img = Image.open(image_path, mode='r') # reads the PIL image
     byte_arr = io.BytesIO()
@@ -22,6 +28,9 @@ def get_response_image(image_path):
 
 @data_bp.route("/")
 def data_index():
+    timestamp = "2021-02-10 21:11:00"
+    timestamp = make_timestame(timestamp)
+    print(timestamp)
     return "Hello"
 
 @data_bp.route("/video/upload", methods=["POST"])
@@ -30,6 +39,7 @@ def upload_video():
         video = request.files["video"]
         user_id = request.form["user_id"]
         timestamp = request.form['timestamp']
+        timestamp = make_timestame(timestamp)
 
         print(f"timestamp : {timestamp}")
         print("------")
@@ -41,8 +51,6 @@ def upload_video():
 
         # 비디오 이미지 저장 경로
         video_path = os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, "video")
-        # 프레임마다 이미지 저장 경로
-        frame_capture_path = os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp)
 
         os.makedirs(video_path, exist_ok=True)
         os.makedirs(os.path.join(video_path, "JPEGImages"), exist_ok=True)
@@ -65,17 +73,17 @@ def upload_video():
             idx += 1
         print("완료")
 
-        with open(os.path.join(frame_capture_path, f"JPEGImages/video-frame-3.png"), 'rb') as img:
+        with open(os.path.join(video_path, f"JPEGImages/video-frame-3.png"), 'rb') as img:
             base64_string1 = base64.b64encode(img.read()).decode("utf-8")
-        with open(os.path.join(frame_capture_path, f"JPEGImages/video-frame-10.png"), 'rb') as img:
+        with open(os.path.join(video_path, f"JPEGImages/video-frame-10.png"), 'rb') as img:
             base64_string2 = base64.b64encode(img.read()).decode("utf-8")
-        with open(os.path.join(frame_capture_path, f"JPEGImages/video-frame-18.png"), 'rb') as img:
+        with open(os.path.join(video_path, f"JPEGImages/video-frame-18.png"), 'rb') as img:
             base64_string3 = base64.b64encode(img.read()).decode("utf-8")
-        with open(os.path.join(frame_capture_path, f"JPEGImages/video-frame-28.png"), 'rb') as img:
+        with open(os.path.join(video_path, f"JPEGImages/video-frame-28.png"), 'rb') as img:
             base64_string4 = base64.b64encode(img.read()).decode("utf-8")
-        with open(os.path.join(frame_capture_path, f"JPEGImages/video-frame-45.png"), 'rb') as img:
+        with open(os.path.join(video_path, f"JPEGImages/video-frame-45.png"), 'rb') as img:
             base64_string5 = base64.b64encode(img.read()).decode("utf-8")
-        with open(os.path.join(frame_capture_path, f"JPEGImages/video-frame-80.png"), 'rb') as img:
+        with open(os.path.join(video_path, f"JPEGImages/video-frame-55.png"), 'rb') as img:
             base64_string6 = base64.b64encode(img.read()).decode("utf-8")
 
         return jsonify({"1":base64_string1,
@@ -105,6 +113,7 @@ def goto_page():
         # time.sleep(10)
         user_id = request.form["user_id"]
         timestamp = request.form.get('timestamp',"000")
+        timestamp = make_timestame(timestamp)
         current_page = int(request.form["current_page"])
         save_imgs = request.form["save_imgs"]
         flag = request.form["flag"] # flag : true : 다음 페이지, false : 이전 페이지
@@ -125,9 +134,9 @@ def goto_page():
             return jsonify(False)
 
         # 비디오 이미지 저장 경로
-        access_pred_path = os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, "predict_img")
-        origin_imgs_path = os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, "split_img")
-        access_folder_path =  os.path.join(os.getenv("TEMP_DATA_PATH"), user_id)
+        access_pred_path = os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, 'video', "Predict")
+        origin_imgs_path = os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, 'video', "JPEGImages")
+        access_folder_path =  os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, 'video')
 
         total_length = len(glob.glob(access_pred_path + "/*.png"))
         print("접근할 경로 : ",access_pred_path)
@@ -145,16 +154,18 @@ def goto_page():
         result = {}  # 정보를 담을 변수
         origin_img_data = {}
         pred_img_data = {}
-        access_pred_path = os.path.join('fake_labe_folder','fake_image.png')
+        # access_pred_path = os.path.join('fake_labe_folder','fake_image.png')
         for idx in range(start_point,end_point):
             filename = f"video-frame-{idx}.png"
-            access_origin_path = os.path.join(access_folder_path,"split_img", filename)
-            # access_pred_path = os.path.join(access_folder_path, "predict_img", filename)  ## 추후 효진님 코드가 합쳐지면 예측 데이터 폴더에 맞게 합쳐질 예정
+            filename_pred = f"predict-frame-{idx}.png"
+            access_origin_path = os.path.join(access_folder_path,"JPEGImages", filename)
+            access_pred_path = os.path.join(access_folder_path, "Predict", filename_pred)  ## 추후 효진님 코드가 합쳐지면 예측 데이터 폴더에 맞게 합쳐질 예정
             print("접근한 경로 리스트 ")
             # print("파일 명 : ",filename)
             # Image를 base64로 변환하기
             with open(access_origin_path, 'rb') as img:
                 base64_string = base64.b64encode(img.read()).decode("utf-8")
+
             label_img = cv2.imread(access_pred_path,0)
             label_img = label_img.tolist()
             pixels = []
@@ -179,6 +190,8 @@ def goto_test():
         print("페이지 넘김 기능 Okay")
         # time.sleep(13)
         user_id = request.form["user_id"]
+        timestamp = request.form['timestamp']
+        timestamp = make_timestame(timestamp)
 
         print("★★★ 받은 데이터 확인 ★★★")
         print()
@@ -191,13 +204,13 @@ def goto_test():
             return jsonify(False)
 
         # 비디오 이미지 저장 경로
-        access_folder_path =  os.path.join(os.getenv("TEMP_DATA_PATH"), user_id)
+        access_folder_path =  os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, "video")
 
         start_point, end_point = 1,9
         origin_img_data = {}
         for idx in range(start_point,end_point):
             filename = f"video-frame-{idx}.png"
-            access_origin_path = os.path.join(access_folder_path,"split_img", filename)
+            access_origin_path = os.path.join(access_folder_path,"JPEGImages", filename)
             # Image를 base64로 변환하기
             with open(access_origin_path, 'rb') as img:
                 base64_string = base64.b64encode(img.read()).decode("utf-8")

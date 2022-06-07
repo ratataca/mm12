@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+
+venv
+pm/
+pretrained_model.pth
+Photovle-Core1/core
+Photovle-Core1/tmp/
