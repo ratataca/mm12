@@ -10,6 +10,9 @@ import io
 from base64 import encodebytes
 from PIL import Image
 import base64
+import random
+from PIL import Image 
+
 
 data_bp = Blueprint('data', __name__, url_prefix='/data')
 
@@ -73,26 +76,16 @@ def upload_video():
             idx += 1
         print("완료")
 
-        with open(os.path.join(video_path, f"JPEGImages/video-frame-3.png"), 'rb') as img:
-            base64_string1 = base64.b64encode(img.read()).decode("utf-8")
-        with open(os.path.join(video_path, f"JPEGImages/video-frame-10.png"), 'rb') as img:
-            base64_string2 = base64.b64encode(img.read()).decode("utf-8")
-        with open(os.path.join(video_path, f"JPEGImages/video-frame-18.png"), 'rb') as img:
-            base64_string3 = base64.b64encode(img.read()).decode("utf-8")
-        with open(os.path.join(video_path, f"JPEGImages/video-frame-28.png"), 'rb') as img:
-            base64_string4 = base64.b64encode(img.read()).decode("utf-8")
-        with open(os.path.join(video_path, f"JPEGImages/video-frame-45.png"), 'rb') as img:
-            base64_string5 = base64.b64encode(img.read()).decode("utf-8")
-        with open(os.path.join(video_path, f"JPEGImages/video-frame-55.png"), 'rb') as img:
-            base64_string6 = base64.b64encode(img.read()).decode("utf-8")
+        tmp_list = {}
+        for i in range(1,7):
+            idx1 = random.randrange(1, idx-1)
+            filename = f"JPEGImages/video-frame-{idx1}.png"
+            with open(os.path.join(video_path, filename), 'rb') as img:
+                base64_string1 = base64.b64encode(img.read()).decode("utf-8")
+            tmp_list[str(i)] = base64_string1
+        
+        return jsonify(tmp_list)
 
-        return jsonify({"1":base64_string1,
-                        "2":base64_string2,
-                        "3":base64_string3,
-                        "4":base64_string4,
-                        "5":base64_string5,
-                        "6":base64_string6,
-                        })
 
 def find_point(n):
     # 1,2,3,4,5,6,7,8,9,10 -> 10개  1page
@@ -111,12 +104,31 @@ def goto_page():
     if request.method == "POST":
         print("페이지 넘김 기능 Okay")
         # time.sleep(10)
+        print("request : ",request.form)
+        print("request : ",request.files)
         user_id = request.form["user_id"]
-        timestamp = request.form.get('timestamp',"000")
+        timestamp = request.form['timestamp']
         timestamp = make_timestame(timestamp)
         current_page = int(request.form["current_page"])
-        save_imgs = request.form["save_imgs"]
+        save_imgs1 = request.files["save_imgs1"]
+        save_imgs2 = request.files["save_imgs2"]
+        save_imgs3 = request.files["save_imgs3"]
+        save_imgs4 = request.files["save_imgs4"]
+        save_imgs5 = request.files["save_imgs5"]
+        save_imgs6 = request.files["save_imgs6"]
+        save_imgs7 = request.files["save_imgs7"]
+        save_imgs8 = request.files["save_imgs8"]
         flag = request.form["flag"] # flag : true : 다음 페이지, false : 이전 페이지
+
+        save_images_file = [save_imgs1,save_imgs2,save_imgs3,save_imgs4,save_imgs5,save_imgs6,save_imgs7,save_imgs8]
+        # print("저장중")
+        # idx=1
+        # filename_pred = f"predict-frame-{idx}.png"
+        # access_folder_path =  os.path.join(os.getenv("TEMP_DATA_PATH"), user_id, timestamp, 'video')
+        # access_pred_path = os.path.join(access_folder_path, "Predict", filename_pred)
+        # cover_img = Image.open(save_imgs1.stream)
+        # cover_img.save(access_pred_path)
+        # print("저장완료")
 
         print()
         print("★★★ 받은 데이터 확인 ★★★")
@@ -124,7 +136,6 @@ def goto_page():
         print("----------------------------------")
         s = f"user id : {user_id}\n" \
             f"current page : {current_page}\n" \
-            f"save imgs : {save_imgs}\n" \
             f"flag : {flag}\n" \
             f"timestamp : {timestamp}"
         print(s)
@@ -142,9 +153,25 @@ def goto_page():
         print("접근할 경로 : ",access_pred_path)
         print("총 이미지 갯수 : ",total_length)
         print(access_folder_path)
+
+        print("덮어쓰기 중   ...ing")
         ## 수정된 내역 데이터 저장 코드는 skip
         start_point,end_point = find_point(current_page)
+        count_idx =0
+        for idx in range(start_point,end_point):
+            # 덮어쓸 파일 명
+            filename_pred = f"predict-frame-{idx}.png"
+            access_pred_path = os.path.join(access_folder_path, "Predict", filename_pred)
 
+            # file = request.files['file']
+            # save_imgs[idx].stream
+            # print(save_imgs1[idx-1])
+            cover_img = Image.open(save_images_file[count_idx].stream)
+            cover_img.save(access_pred_path)
+            count_idx +=1
+            print("오잉 완료")
+        print("덮어쓰기 완료")
+        print()
         if flag:  # true이면 다음 페이지
             next_page = current_page +1
         else:  # false 이면 이전 페이지

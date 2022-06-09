@@ -53,12 +53,20 @@ def trainer(user_id, timestamp, epoches=100, batch=500):
         for ii, sample_batched in enumerate(train_loader):
 
             inputs, gts = sample_batched['image'], sample_batched['gt']
-
+            
+            print("학습 이미지 크기 : ",inputs.shape)
+            print("마스크 이미지 크기 : ",gts.shape)
+            
             inputs.requires_grad_()
             inputs, gts = inputs.to(device), gts.to(device)
 
             outputs = net.forward(inputs)
 
+            # print("아웃풋 이미지 크기 : ",outputs.size)
+            #print("모델 구조 : ")
+            #print(net)
+            #
+            print("------------------------------")
             loss = class_balanced_cross_entropy_loss(outputs[-1], gts, size_average=False)
             loss.backward()
 
